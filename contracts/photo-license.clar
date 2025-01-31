@@ -47,15 +47,41 @@
         (photo (unwrap! (map-get? photos {photo-id: photo-id}) err-not-found))
         (platform-amount (/ (* payment (var-get platform-fee)) u100))
         (remaining-amount (- payment platform-amount))
+        (collaborators (get collaborators photo))
     )
     (begin
         ;; Send platform fee
         (try! (stx-transfer? platform-amount tx-sender contract-owner))
         
-        ;; Distribute to collaborators
-        (map-get? photos {photo-id: photo-id})
+        ;; Send owner share if no collaborators
+        (if (is-eq (len collaborators) u0)
+            (try! (stx-transfer? remaining-amount tx-sender (get owner photo)))
+            ;; Distribute to collaborators
+            (let ((owner-share (- u100 (fold + (map get-share collaborators) u0))))
+                (begin 
+                    ;; Send owner their share
+                    (try! (stx-transfer? (/ (* remaining-amount owner-share) u100) tx-sender (get owner photo)))
+                    ;; Send collaborator shares
+                    (map distribute-collaborator-share 
+                        (map (lambda (collab) 
+                            {address: (get address collab), 
+                             amount: (/ (* remaining-amount (get share collab)) u100)})
+                        collaborators)
+                    )
+                )
+            )
+        )
         (ok true)
     ))
+)
+
+(define-private (get-share (collaborator {address: principal, share: uint}))
+    (get share collaborator)
+)
+
+(define-private (distribute-collaborator-share (payment {address: principal, amount: uint}))
+    (try! (stx-transfer? (get amount payment) tx-sender (get address payment)))
+    (ok true)
 )
 
 ;; Public Functions
@@ -63,9 +89,11 @@
     (let
         (
             (photo-id (+ (var-get license-counter) u1))
+            (total-share (fold + (map get-share collaborators) u0))
         )
         (asserts! (is-some (map-get? categories {name: category})) err-invalid-category)
         (asserts! (> price u0) err-invalid-price)
+        (asserts! (<= total-share u100) err-invalid-share)
         (begin
             (map-set photos 
                 {photo-id: photo-id}
