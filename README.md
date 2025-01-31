@@ -6,7 +6,7 @@ A blockchain-based system for managing photography licenses built on the Stacks 
 
 - Photographers can register their photos with custom pricing
 - Support for multiple photo categories and content organization
-- Revenue sharing between multiple collaborators
+- Revenue sharing between multiple collaborators with validation
 - Commercial and non-commercial licensing options
 - Platform fee structure for sustainability
 - Users can purchase time-limited licenses for photos
@@ -28,6 +28,8 @@ The system uses the following main functions:
 - Platform takes 5% fee on all transactions
 - Support for up to 5 collaborators per photo
 - Automatic payment distribution based on share percentages
+- Collaborator shares are validated to not exceed 100%
+- Owner receives remaining share after collaborator distributions
 - Commercial licenses cost 2x regular price
 
 ## Getting Started

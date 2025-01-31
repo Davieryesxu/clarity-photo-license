@@ -75,3 +75,33 @@ Clarinet.test({
         block2.receipts[0].result.expectOk();
     }
 });
+
+Clarinet.test({
+    name: "Test invalid collaborator share total",
+    async fn(chain: Chain, accounts: Map<string, Account>) {
+        const deployer = accounts.get('deployer')!;
+        const collaborator1 = accounts.get('wallet_2')!;
+        const collaborator2 = accounts.get('wallet_3')!;
+        
+        let block1 = chain.mineBlock([
+            Tx.contractCall('photo-license', 'add-category', [
+                types.ascii("nature")
+            ], deployer.address)
+        ]);
+        
+        let block2 = chain.mineBlock([
+            Tx.contractCall('photo-license', 'register-photo', [
+                types.uint(100),
+                types.ascii("Test Photo"),
+                types.ascii("Test Description"),
+                types.ascii("nature"),
+                types.list([
+                    {address: collaborator1.address, share: types.uint(60)},
+                    {address: collaborator2.address, share: types.uint(50)}
+                ])
+            ], deployer.address)
+        ]);
+
+        block2.receipts[0].result.expectErr(105); // err-invalid-share
+    }
+});
